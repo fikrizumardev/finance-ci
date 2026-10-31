@@ -5,29 +5,25 @@ namespace App\Controllers;
 use CodeIgniter\Controller;
 use CodeIgniter\HTTP\CLIRequest;
 use CodeIgniter\HTTP\IncomingRequest;
+use CodeIgniter\HTTP\RedirectResponse;
 use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
 use Psr\Log\LoggerInterface;
 
 /**
- * BaseController provides a convenient place for loading components
- * and performing functions that are needed by all your controllers.
+ * Controller dasar. Menyediakan helper htmx (pengganti mekanisme Livewire):
+ * - isHtmx(): request meminta partial;
+ * - hxRedirect(): pindah halaman penuh setelah aksi sukses (setara $this->redirect() di Livewire);
+ * - hxTrigger(): memicu event di browser, mis. "close-modal".
  *
- * Extend this class in any new controllers:
- * ```
- *     class Home extends BaseController
- * ```
- *
- * For security, be sure to declare any new methods as protected or private.
+ * Untuk keamanan, method non-aksi wajib protected/private.
  */
 abstract class BaseController extends Controller
 {
     /**
-     * Be sure to declare properties for any property fetch you initialized.
-     * The creation of dynamic property is deprecated in PHP 8.2.
+     * @var CLIRequest|IncomingRequest
      */
-
-    // protected $session;
+    protected $request;
 
     /**
      * @param CLIRequest|IncomingRequest $request
@@ -36,14 +32,40 @@ abstract class BaseController extends Controller
      */
     public function initController(RequestInterface $request, ResponseInterface $response, LoggerInterface $logger)
     {
-        // Load here all helpers you want to be available in your controllers that extend BaseController.
-        // Caution: Do not put the this below the parent::initController() call below.
-        // $this->helpers = ['form', 'url'];
-
         // Caution: Do not edit this line.
         parent::initController($request, $response, $logger);
+    }
 
-        // Preload any models, libraries, etc, here.
-        // $this->session = service('session');
+    protected function isHtmx(): bool
+    {
+        return is_htmx();
+    }
+
+    /**
+     * Redirect penuh: via header HX-Redirect untuk htmx, redirect biasa untuk request non-JS.
+     */
+    protected function hxRedirect(string $url): RedirectResponse|ResponseInterface
+    {
+        if ($this->request->getHeaderLine('HX-Request') === 'true') {
+            return $this->response->setHeader('HX-Redirect', $url);
+        }
+
+        return redirect()->to($url);
+    }
+
+    /**
+     * Tambahkan event HX-Trigger pada respons (mis. menutup modal setelah hapus).
+     */
+    protected function hxTrigger(string $event): void
+    {
+        $this->response->setHeader('HX-Trigger', $event);
+    }
+
+    /**
+     * ID user yang sedang login (dijamin ada karena route dilindungi filter auth).
+     */
+    protected function userId(): int
+    {
+        return (int) user_id();
     }
 }

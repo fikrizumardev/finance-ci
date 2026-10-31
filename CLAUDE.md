@@ -49,11 +49,13 @@ app/Enums/*.php                           salinan app/Enums Laravel (jangan diub
 app/Services/*.php                        logika multi-tabel (DebtLedgerService, ImageCompressor, DocumentNumberService, DocumentCalculator, AuthService)
 app/Helpers/app_helper.php                rupiah(), month_name(), is_htmx(), user_id(), field_error(), …
 app/Views/layouts/{app,auth}.php
-app/Views/partials/                       head_assets, tailwind_css, sidebar, flash, delete_modal, pagination, form_error
+app/Views/partials/                       head_assets, tailwind_css, sidebar, flash, delete_modal, pagination
 app/Views/<modul>/<resource>/             index.php (halaman) + _list.php (partial htmx) + form.php + _form.php (+ show.php/_detail.php)
 public/js/app.js                          grafik native, modal detail grafik, PWA banner, documentForm(), hook htmx
 writable/uploads/bill-payments/           screenshot (disajikan lewat controller, bukan publik)
 ```
+
+Route halaman yang belum dimigrasi sementara menunjuk `PlaceholderController::index` (lihat `app/Config/Routes.php`); ganti handler-nya saat fase terkait dikerjakan.
 
 Konvensi: controller `PascalCase` + suffix `Controller`; view `snake_case`; partial diawali `_`. Nama route disamakan dengan Laravel (`'as' => 'house.bills.index'`) dan dipakai lewat `url_to('house.bills.index')`.
 
@@ -130,18 +132,18 @@ private function listData(array $q): array
 </form>
 <div id="list"><?= $this->include('house/bills/_list') ?></div>
 ```
-Search/filter tidak mengirim `page`, sehingga otomatis kembali ke halaman 1. Link paginasi (`partials/pagination.php`, markup dari view tailwind Livewire, data dari `$pager->getDetails()` + `$pager->getPageURI($n)`) diberi `hx-get="…" hx-target="#list" hx-push-url="true"`.
+Search/filter tidak mengirim `page`, sehingga otomatis kembali ke halaman 1. Paginasi: `view('partials/pagination', ['pager' => $pager, 'baseUrl' => url_to('house.bills.index'), 'query' => ['search' => $search], 'target' => '#list'])` (markup 1:1 view tailwind Livewire, algoritma UrlWindow Laravel). URL halaman dibangun dari `baseUrl` + `query`, **bukan** `getPageURI()`, karena respons aksi POST (toggle/hapus) punya current URL = URL aksi. Seperti Blade, panggil hanya jika `$pager->getPageCount() > 1`.
 
 **2. Aksi baris (toggle):** `<button hx-post="<?= url_to('house.bills.toggle', $id) ?>" hx-include="#filters, [name=page]" hx-target="#list">`. Controller menjalankan aksi lalu `return view('…/_list', $this->listData($this->request->getPost()))`. Partial `_list` menyertakan `<input type="hidden" name="page" value="…">`.
 
-**3. Modal hapus:** markup modal disalin dari Blade, state dikelola Alpine (`x-data="{ open:false, deleteId:null }"`, `@close-modal.window="open=false"`). Tombol "Hapus" pada baris: `@click="deleteId = <?= $id ?>; open = true"`. Isi modal berupa form statis:
-```html
-<form hx-post="<?= url_to('house.bills.delete') ?>" hx-target="#list" hx-include="#filters, [name=page]" hx-disabled-elt="find button[type=submit]">
-  <input type="hidden" name="id" :value="deleteId">
-  <button type="submit"><span class="hide-on-request">Hapus</span><span class="htmx-indicator">Menghapus...</span></button>
-</form>
+**3. Modal hapus:** pakai `partials/delete_modal` (markup sama dengan modal Livewire; `variant: 'business'` untuk varian overlay tanpa `px-4` + kotak `mx-4`). Pembungkus halaman: `x-data="{ deleteOpen: false, deleteId: null }"`; tombol "Hapus" pada baris: `@click="deleteId = <?= $id ?>; deleteOpen = true"`.
+```php
+<?= view('partials/delete_modal', ['title' => 'Hapus Tagihan?', 'message' => '…teks sumber…',
+    'action' => url_to('house.bills.delete'), 'target' => '#list', 'include' => '#filters, [name=page]']) ?>
 ```
-Controller: cek pemilik → hapus → set flash → kembalikan `_list` (yang merender `partials/flash`) + header `HX-Trigger: close-modal`. Atribut `hx-*` tidak boleh dibuat dinamis dengan Alpine (`:hx-post`) karena htmx membaca atributnya saat elemen diproses.
+Controller: cek pemilik → hapus → kembalikan `_list` dengan `message` flash → `$this->hxTrigger('close-modal')`. Atribut `hx-*` tidak boleh dibuat dinamis dengan Alpine (`:hx-post`) karena htmx membaca atributnya saat elemen diproses.
+
+**Flash:** `view('partials/flash', ['message' => …, 'class' => …kelas varian sumber…])`. Pada respons partial htmx, kirim pesan langsung lewat `message` (jangan `setFlashdata`, karena pesannya akan muncul lagi di request berikutnya). `setFlashdata('success', …)` hanya untuk alur redirect / `HX-Redirect`.
 
 **4. Form create/edit:**
 ```html
@@ -177,7 +179,8 @@ Auth kustom (bukan Shield) di atas tabel `users` Laravel. Hash bcrypt Laravel va
 
 ## Tes
 
-- PHPUnit CI4 (`CIUnitTestCase`, `DatabaseTestTrait`, `FeatureTestTrait`) dengan DB MySQL terpisah (ENUM/FK spesifik MySQL, jangan pakai SQLite).
+- PHPUnit CI4 dengan DB MySQL terpisah (ENUM/FK spesifik MySQL, jangan pakai SQLite). Feature test extend `Tests\Support\FeatureTestCase` (migrasi + seed user demo, CSRF dimatikan; `enableCsrf()` untuk tes CSRF, `htmx()` untuk header, `demoUserId()`).
+- Di lingkungan testing: `Session::destroy()` tidak melakukan apa-apa (hapus key secara eksplisit), `withHeaders()` berlaku sampai diganti (`withHeaders([])`), cookie request di-set via `service('superglobals')->setCookie()`, dan exception CSRF/404 dilempar (bukan respons 403/404) → pakai `expectException`. `TestResponse::assertSee` mem-parse HTML (fragmen dibungkus `<html><body>`), jadi cek isi mentah via `$result->response()->getBody()`.
 - Setiap fitur baru minimal punya: tes isolasi user (user B tidak bisa melihat/mengubah data user A, termasuk via search), tes validasi, dan tes logika service.
 - Simulasikan request htmx dengan `->withHeaders(['HX-Request' => 'true'])`, lalu cek respons berupa partial (tanpa `<html>`).
 

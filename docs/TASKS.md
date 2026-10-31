@@ -30,74 +30,74 @@ Legenda: **P0** = wajib Fase 1 · **P1** = Fase 2 · **P2** = Fase 3/opsional
 ## Fase 1 — Fondasi
 
 ### 1A. Database
-- [ ] **T1.1 Migrasi skema** (P0). SRC: `database/migrations/*.php`
+- [x] **T1.1 Migrasi skema** (P0). SRC: `database/migrations/*.php`
   - Buat migrasi CI4 dengan nama, tipe, panjang, default, nullable, index, unique, dan FK (`CASCADE` / `RESTRICT` / `SET NULL`) **identik**. `enum` → `ENUM` MySQL dengan nilai yang sama. `decimal(15,2)`, `softDeletes` → kolom `deleted_at`.
   - Gabungkan 2 migrasi "fix nullable interest_rate" langsung ke definisi tabel (`interest_rate` nullable default NULL).
   - Urutan migrasi mengikuti dependensi FK. Tabel Laravel-only (sessions, cache, jobs, …) dilewati.
   - ✅ `php spark migrate` sukses; `SHOW CREATE TABLE` setiap tabel cocok dengan DB Laravel (bandingkan via `mysqldump --no-data`).
-- [ ] **T1.2 Seeder** (P0). SRC: `database/seeders/*`
+- [x] **T1.2 Seeder** (P0). SRC: `database/seeders/*`
   - `UserSeeder` (2 user, password `password`, `password_hash(PASSWORD_BCRYPT)`), `CategorySeeder`, `UtilityBillSeeder`, `DatabaseSeeder` (memanggil ketiganya).
   - ✅ `php spark db:seed DatabaseSeeder` sukses dan bisa login dengan demo@myfinance.app.
 
 ### 1B. Domain Layer
-- [ ] **T1.3 Enums** (P0). SRC: `app/Enums/*.php`. Salin ke `app/Enums` dengan namespace `App\Enums`, tanpa perubahan logika.
-- [ ] **T1.4 Entities** (P0). SRC: `app/Models/*.php`
-  - Entity untuk User, UtilityBill, BillPayment, Contact, Debt, DebtPayment, Receivable, ReceivablePayment (Fase 2: Client, Product, Quotation, QuotationItem, Invoice, InvoiceItem, InvoicePayment, Receipt, BusinessSetting).
+- [x] **T1.3 Enums** (P0). SRC: `app/Enums/*.php`. Salin ke `app/Enums` dengan namespace `App\Enums`, tanpa perubahan logika.
+- [x] **T1.4 Entities** (P0). SRC: `app/Models/*.php`
+  - Entity untuk User, UtilityBill, BillPayment, Contact, Debt, DebtPayment, Receivable, ReceivablePayment ✔ (entity bisnis dibuat di Fase 5: Client, Product, Quotation, QuotationItem, Invoice, InvoiceItem, InvoicePayment, Receipt, BusinessSetting).
   - Getter enum: `getCategory()`, `getPaymentMethod()`, `getStatus()` mengembalikan enum (`BillCategory::from(...)`), dan getter tanggal mengembalikan `CodeIgniter\I18n\Time`.
   - Port method: `User::initials()`, `UtilityBill::isDueSoon(int $days = 3)`, `BillPayment::getPeriodLabel()` / `hasScreenshot()`, `Invoice::isOverdue()`.
   - ✅ Unit test: `isDueSoon` (termasuk kasus akhir bulan), `initials`, `getPeriodLabel`.
-- [ ] **T1.5 Models** (P0). Satu model per tabel: `$returnType` entity, `$allowedFields`, `$useTimestamps = true`, `$useSoftDeletes` untuk accounts/transactions. Tambahkan method scope, mis. `forUser(int $id)`, `active()`.
-- [ ] **T1.6 Helper `app_helper.php`** (P0)
+- [x] **T1.5 Models** (P0). Satu model per tabel: `$returnType` entity, `$allowedFields`, `$useTimestamps = true`, `$useSoftDeletes` untuk accounts/transactions. Tambahkan method scope, mis. `forUser(int $id)`, `active()`.
+- [x] **T1.6 Helper `app_helper.php`** (P0)
   - `rupiah($n)` → `'Rp ' . number_format((float)$n, 0, ',', '.')`
   - `month_name(int $m)` → array bulan Indonesia (Januari…Desember)
   - `is_htmx()`, `current_user()`, `user_id()`
   - `field_error(string $field)` → `<p class="mt-1 text-xs text-red-600">…</p>` (pengganti `@error`)
   - `has_error(string $field)`, `old_or(string $field, $default)`
   - ✅ Unit test helper.
-- [ ] **T1.7 Bahasa validasi** `app/Language/id/Validation.php`: pesan default berbahasa Indonesia. (P0)
+- [x] **T1.7 Bahasa validasi** `app/Language/id/Validation.php`: pesan default berbahasa Indonesia. (P0)
 
 ### 1C. Layout & Aset (paritas visual)
-- [ ] **T1.8 Partial `head_assets.php`** (P0). SRC: `resources/views/partials/head.blade.php`, `layouts/app.blade.php` (head)
+- [x] **T1.8 Partial `head_assets.php`** (P0). SRC: `resources/views/partials/head.blade.php`, `layouts/app.blade.php` (head)
   - Meta, favicon, PWA meta, font Inter (bunny.net).
   - `<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>`
   - `<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3/dist/cdn.min.js"></script>`
   - `<script src="https://cdn.jsdelivr.net/npm/htmx.org@2/dist/htmx.min.js"></script>`
   - `<meta name="htmx-config" content='{"includeIndicatorStyles":false}'>`
   - Style dasar: `[x-cloak]{display:none!important}` + aturan `.htmx-indicator` / `.hide-on-request` (lihat CLAUDE.md).
-- [ ] **T1.9 Partial `tailwind_css.php`** (P0). SRC: `resources/css/app.css`
+- [x] **T1.9 Partial `tailwind_css.php`** (P0). SRC: `resources/css/app.css`
   - Isi `app.css` **tanpa** baris `@import 'tailwindcss'` dan `@source …`, dibungkus `<style type="text/tailwindcss">…</style>`.
   - ✅ `.mf-panel`, `.mf-eyebrow`, `.app-header`, `.app-main`, dan grafik tampil sama.
-- [ ] **T1.10 Layout `layouts/app.php`** (P0). SRC: `resources/views/layouts/app.blade.php`
+- [x] **T1.10 Layout `layouts/app.php`** (P0). SRC: `resources/views/layouts/app.blade.php`
   - Salin markup 1:1: wrapper Alpine `sidebarOpen`, overlay, sidebar, header (hamburger, logo mobile, eyebrow, lonceng, dropdown user), `<main class="app-main …">`.
   - `<body hx-headers='{"X-CSRF-TOKEN":"<?= csrf_hash() ?>"}'>`.
   - Ganti `@livewireScripts` dengan `<script src="/js/app.js"></script>`; skrip registrasi SW dipertahankan. Skrip "tutup sidebar saat livewire:navigated" dihapus.
   - Section: `$this->renderSection('content')`, `title`.
-- [ ] **T1.11 Partial `sidebar.php`** (P0). SRC: `resources/views/components/sidebar.blade.php`
+- [x] **T1.11 Partial `sidebar.php`** (P0). SRC: `resources/views/components/sidebar.blade.php`
   - Markup, `<style>`, dan skrip `scrollSidebarToActive` 1:1. Status aktif berdasarkan prefix URL (`url_is('house*')`, dll.) dengan logika sama seperti `request()->routeIs`.
   - Menu bisnis hanya dirender jika `config('App')->showBusinessMenu`.
-- [ ] **T1.12 Layout `layouts/auth.php`** (P0). SRC: `resources/views/components/layouts/auth.blade.php` (font Plus Jakarta Sans + `<style>` panjang, 1:1).
-- [ ] **T1.13 Partial umum** (P0): `flash.php` (markup flash dari `house/bills/index.blade.php`), `delete_modal.php` (modal Alpine, markup sama seperti modal Livewire, menerima judul/teks/URL/target), `pagination.php` (port markup `vendor/livewire/livewire/src/Features/SupportPagination/views/tailwind.blade.php`; data dari `$pager->getDetails()` + `$pager->getPageURI($n)`; setiap link diberi `hx-get` + `hx-target` + `hx-push-url`; teks "Showing X to Y of Z results" sama seperti sumber).
-- [ ] **T1.14 `public/js/app.js`** (P0). SRC: `resources/js/app.js`
+- [x] **T1.12 Layout `layouts/auth.php`** (P0). SRC: `resources/views/components/layouts/auth.blade.php` (font Plus Jakarta Sans + `<style>` panjang, 1:1).
+- [x] **T1.13 Partial umum** (P0): `flash.php` (markup flash dari `house/bills/index.blade.php`), `delete_modal.php` (modal Alpine, markup sama seperti modal Livewire, menerima judul/teks/URL/target), `pagination.php` (port markup `vendor/livewire/livewire/src/Features/SupportPagination/views/tailwind.blade.php`; URL dibangun dari `baseUrl` + filter aktif (bukan `getPageURI()`), algoritma UrlWindow Laravel; setiap link diberi `hx-get` + `hx-target` + `hx-push-url`; teks "Showing X to Y of Z results" sama seperti sumber).
+- [x] **T1.14 `public/js/app.js`** (P0). SRC: `resources/js/app.js`
   - Hapus `import './bootstrap'` (axios tidak dipakai).
   - Grafik & modal detail: salin 1:1. Ganti listener `livewire:init` / `livewire:navigated` dengan `DOMContentLoaded` + `htmx:afterSettle`. MutationObserver `data-chart` boleh dipertahankan.
   - Banner PWA: salin 1:1.
   - Tambahkan listener global: `htmx:configRequest` (sisipkan CSRF), `htmx:responseError` (toast sederhana jika 403/500).
-- [ ] **T1.15 Salin aset publik** (P0): `public/img/**`, `favicon.ico`, `manifest.json`, `robots.txt`, `sw.js` (diperbarui di T6.3).
+- [x] **T1.15 Salin aset publik** (P0): `public/img/**`, `favicon.ico`, `manifest.json`, `robots.txt`, `sw.js` (diperbarui di T6.3).
 
 ### 1D. Auth
-- [ ] **T1.16 AuthService + Filters** (P0)
+- [x] **T1.16 AuthService + Filters** (P0)
   - `attempt(email, password, remember)`: `password_verify`, `session()->regenerate()`, simpan `user_id`.
   - Throttle: `service('throttler')->check(md5(strtolower($email).'|'.$ip), 5, MINUTE)`, lalu `getTokenTime()` untuk pesan detik. Reset saat sukses.
   - Remember-me: token acak, cookie `remember` (30 hari, httponly), hash disimpan di `users.remember_token`; `AuthFilter` melakukan auto-login dari cookie.
   - `AuthFilter`: belum login → simpan `redirect_url` (intended) → redirect `/login`. Untuk request htmx, kirim header `HX-Redirect: /login`.
   - `GuestFilter`: sudah login → `/dashboard`.
-- [ ] **T1.17 Halaman login** (P0). SRC: `resources/views/livewire/auth/login.blade.php`, `app/Livewire/Auth/Login.php`
+- [x] **T1.17 Halaman login** (P0). SRC: `resources/views/livewire/auth/login.blade.php`, `app/Livewire/Auth/Login.php`
   - View 1:1 (termasuk `<style>` login dan toggle password Alpine).
   - Form `hx-post="/login" hx-target="this" hx-swap="outerHTML"`. Gagal → partial form + error. Sukses → `HX-Redirect` ke intended/dashboard.
   - Loading "Memproses..." + spinner via `.htmx-indicator`.
   - ✅ Tes: login sukses, gagal, throttle ke-6, remember-me, redirect intended.
-- [ ] **T1.18 Logout** (P0): `POST /logout` → destroy session, hapus cookie remember → redirect `/`.
-- [ ] **T1.19 Register** (P2, default nonaktif): route aktif hanya jika `allowRegistration`.
+- [x] **T1.18 Logout** (P0): `POST /logout` → destroy session, hapus cookie remember → redirect `/`.
+- [x] **T1.19 Register** (P2, default nonaktif): route aktif hanya jika `allowRegistration`.
 
 ## Fase 2 — Dashboard Utama & Operasional Rumah
 
