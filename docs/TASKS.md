@@ -10,7 +10,7 @@ Legenda: **P0** = wajib Fase 1 · **P1** = Fase 2 · **P2** = Fase 3/opsional
 
 ## Fase 0 — Setup Proyek
 
-- [ ] **T0.1 Install CodeIgniter 4** (P0)
+- [x] **T0.1 Install CodeIgniter 4** (P0)
   - Folder ini tidak kosong (ada `CLAUDE.md`, `docs/`), sehingga `create-project .` akan gagal. Jalankan:
     ```bash
     cd D:/project-app
@@ -19,8 +19,8 @@ Legenda: **P0** = wajib Fase 1 · **P1** = Fase 2 · **P2** = Fase 3/opsional
     ```
   - Salin `env` ke `.env`. Set `CI_ENVIRONMENT = development`, `app.baseURL = 'http://localhost:8080/'`, `database.default.*` (MySQL, db `finance_app`).
   - ✅ `php spark serve` menampilkan halaman welcome CI4.
-- [ ] **T0.2 Inisialisasi git** + `.gitignore` (bawaan CI4 + `writable/uploads/*`, `.env`). (P0)
-- [ ] **T0.3 Konfigurasi dasar** (P0)
+- [x] **T0.2 Inisialisasi git** + `.gitignore` (bawaan CI4 + `writable/uploads/*`, `.env`). (P0)
+- [x] **T0.3 Konfigurasi dasar** (P0)
   - `app/Config/App.php`: `$appTimezone = 'Asia/Jakarta'`, `$defaultLocale = 'id'`, `$supportedLocales = ['id']`, `$indexPage = ''`, tambahkan properti `public bool $allowRegistration = false; public bool $showBusinessMenu = false;`.
   - `app/Config/Security.php`: `$csrfProtection = 'session'`, `$headerName = 'X-CSRF-TOKEN'`, `$regenerate = false`, `$redirect = false` (agar request htmx yang gagal CSRF mengembalikan 403, bukan redirect).
   - `app/Config/Filters.php`: aktifkan `csrf` global (kecuali GET), daftarkan alias `auth` & `guest`.
